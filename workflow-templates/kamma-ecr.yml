@@ -1,0 +1,60 @@
+name: Publish Docker Image to ECR
+
+on:
+    push:
+        branches: [integration]
+    pull_request:
+        branches: [integration]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v2
+
+            - name: Get known hosts from Github
+              run: KNOWN_HOSTS="ssh-keyscan github.com"
+
+            - name: Install SSH key
+              uses: shimataro/ssh-key-action@v2
+              with:
+                  key: ${{ secrets.SSH_KEY }}
+                  name: id_rsa # optional
+                  known_hosts: ${ KNOWN_HOSTS }
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v1
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: eu-west-1
+
+            - name: Login to Amazon ECR
+              id: login-ecr
+              uses: aws-actions/amazon-ecr-login@v1
+
+            - uses: satackey/action-docker-layer-caching@v0.0.11
+              # Ignore the failure of a step and avoid terminating the job.
+              continue-on-error: true
+
+            - name: Build docker image
+              env:
+                  ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+                  ECR_REPOSITORY: <account>.dkr.ecr.<region>.amazonaws.com/<repository>
+              run: |
+                  docker-compose -f docker-compose.yml -f docker-compose.prod.yml build \
+                    --build-arg PRIVATE_KEY="$(cat ~/.ssh/id_rsa)" \
+                    app
+
+            - uses: benjlevesque/short-sha@v1.2
+              id: short-sha
+              with:
+                  length: 8
+
+            - name: Tag and push image to Amazon ECR
+              env:
+                  ECR_REPOSITORY: <account>.dkr.ecr.<region>.amazonaws.com/<repository>
+              run: |
+                  docker tag ${ECR_REPOSITORY}:latest ${ECR_REPOSITORY}:${{ steps.short-sha.outputs.sha }}
+                  docker push ${ECR_REPOSITORY}:latest
+                  docker push ${ECR_REPOSITORY}:${{ steps.short-sha.outputs.sha }}

@@ -1,0 +1,11 @@
+{
+    "name": "Kamma: Publish an image to ECR",
+    "description": "A Kamma workflow for publishing an image to ECR.",
+    "iconName": "kamma-logo",
+    "categories": [
+        "Dockerfile"
+    ],
+    "filePatterns": [
+        "^Dockerfile"
+    ]
+}

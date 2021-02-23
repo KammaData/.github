@@ -1,0 +1,11 @@
+{
+    "name": "Kamma: PHPUnit & XDebug",
+    "description": "A Kamma workflow for testing with PHPUnit and XDebug.",
+    "iconName": "kamma-logo",
+    "categories": [
+        "PHP"
+    ],
+    "filePatterns": [
+        "*.php"
+    ]
+}
