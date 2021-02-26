@@ -1,0 +1,11 @@
+{
+    "name": "Kamma: PHP-CS-Fixer Enforce Code Style",
+    "description": "A Kamma workflow for enforcing code style via PHP-CS-Fixer.",
+    "iconName": "kamma-logo",
+    "categories": [
+        "PHP"
+    ],
+    "filePatterns": [
+        "*.php"
+    ]
+}
