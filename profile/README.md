@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/KammaData/.github/main/profile/logo.png" alt="kamma_logo" align="left">
+<img src="./logo.png" alt="kamma_logo" align="left">
 
 # Kamma
 
