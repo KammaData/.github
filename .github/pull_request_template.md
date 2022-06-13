@@ -3,9 +3,15 @@
 # Description
 <!--- Describe your changes in detail -->
 
+# Secondary changes
+<!--- Describe any fixes or refactorings that weren't directly related to the main goal of the PR/Jira ticket, just for context purposes. -->
+
 # Related Issue
 <!--- Please link to the issue here: -->
 <!--- GET-XXXX .... -->
+
+# Screenshots
+<!--- Share any sceenshots your project may have that you think might be helpful or QA and documentation. -->
 
 # Known Technical Debt
 <!--- Describe any known technical debt issues that have been considered in detail -->
