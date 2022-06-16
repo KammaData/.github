@@ -1,4 +1,5 @@
 <!--- Provide a general summary of your changes in the Title above -->
+<!--- Should be prefixed with the Jira issue number `GET-XXXX: My PR title` so that it gets pulled into the Jira UI -->
 
 <!--- Provide a short summary for context -->
 [short summary]
