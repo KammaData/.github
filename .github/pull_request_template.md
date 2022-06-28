@@ -15,7 +15,8 @@
 
 ## Related Issue
 <!--- Please link to the issue here: -->
-<!--- GET-XXXX .... -->
+
+https://kamma.atlassian.net/browse/GET-XXXX
 
 ## Screenshots
 <!--- Share any sceenshots your project may have that you think might be helpful or QA and documentation. -->
