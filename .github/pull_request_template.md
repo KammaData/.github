@@ -5,11 +5,11 @@
 [short summary]
 
 <!--- Describe your changes in detail, with multiple summaries of changes (if required) -->
-#### [Summary of change]
+## Changes in detail
 
 - Change with a mini explanation
 
-### Secondary changes
+### Any secondary changes
 <!--- Describe any fixes or refactorings that weren't directly related to the main goal of the PR/Jira ticket. -->
 - Change with a mini explanation
 
