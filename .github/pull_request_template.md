@@ -39,3 +39,6 @@ https://kamma.atlassian.net/browse/GET-XXXX
 ### Security and validation
 - [ ] The code has appropriate validation
 - [ ] All raw database queries use prepared statements
+- [ ] All external data (e.g. from API's, data sets or form POST) are sanitised,  validated and handled defensively in their entirety
+- [ ] Any vulnerability alerts for associated packages are patched (RFC's or otherwise)
+- [ ] The base Docker image, if it applies, is up to date with the latest OS image and packages
