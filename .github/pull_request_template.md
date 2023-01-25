@@ -31,13 +31,20 @@ https://kamma.atlassian.net/browse/GET-XXXX
 <!--- If you're unsure about any of these, don't hesitate to ask. We're here to help! -->
 
 ### Code Style
+
 - [ ] My code follows the code style of this project.
 - [ ] My change requires a change to the documentation.
 - [ ] I have updated the documentation accordingly.
 
+### Tests
+
+- [ ] This PR has been QA tested.
+- [ ] I have written or updated automated tests for this.
+- [ ] All tests are passing _(unless there's a [reasonable excuse](https://github.com/KammaData/.github/pull/1#pullrequestreview-1263181474) to merge a failing PR)_.
+
 ### Security
 
-- [ ] All raw database queries use prepared statements
-- [ ] All external data (e.g. from API's, data sets or form POST) are sanitised,  validated and handled defensively in their entirety
-- [ ] Any vulnerability alerts for associated packages are patched (RFC's or otherwise)
-- [ ] The base Docker image, if it applies, is up to date with the latest OS image and packages
+- [ ] All raw database queries use prepared statements.
+- [ ] All external data (e.g. from API's, data sets or form POST) are sanitised, validated and handled defensively in their entirety.
+- [ ] Any vulnerability alerts for associated packages are patched (RFC's or otherwise).
+- [ ] The base Docker image, if it applies, is up to date with the latest OS image and packages.
