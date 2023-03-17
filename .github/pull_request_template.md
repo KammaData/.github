@@ -1,5 +1,5 @@
 <!--- Provide a general summary of your changes in the Title above -->
-<!--- Should be prefixed with the Jira issue number `GET-XXXX: My PR title` so that it gets pulled into the Jira UI -->
+<!--- Should be prefixed with the Jira issue number `KAM-XXXX: My PR title` so that it gets pulled into the Jira UI -->
 
 <!--- Provide a short summary for context -->
 [short summary]
@@ -9,7 +9,7 @@
 ## Related Issue
 <!--- Please link to the issue here: -->
 
-https://kamma.atlassian.net/browse/GET-XXXX
+https://kamma.atlassian.net/browse/KAM-XXXX
 
 ## Screenshots
 <!--- Share any sceenshots your project may have that you think might be helpful or QA and documentation. -->
