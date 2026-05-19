@@ -1,0 +1,157 @@
+name: Conventional Release
+
+# Kamma shared workflow template for the conventional-commits release flow.
+# See https://docs.kammadata.com/#/development/release_strategy
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - integration
+      - 'hotfix/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Lint every commit in the PR for conventional-commit conformance.
+  commit-lint:
+    name: Conventional Commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v6
+
+  # Lint the PR title — guards against squash-merge subjects bypassing commit-lint.
+  pr-title:
+    name: PR Title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          requireScope: true
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            test
+            docs
+            chore
+            style
+            build
+            ci
+            revert
+          scopes: |
+            ^KAM-\d+$
+
+  # Cut a GitHub release on every merge to main. Version + notes derive from
+  # the conventional commits since the last tag.
+  release:
+    name: Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.semver.outputs.next }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine next semver version
+        id: semver
+        uses: ietf-tools/semver-action@v1
+        with:
+          token: ${{ github.token }}
+          branch: main
+          patchList: fix, bugfix, perf, refactor, test, tests, docs, chore, style, build, ci
+
+      - name: Build categorised changelog
+        id: changelog
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ github.token }}
+          tag: ${{ steps.semver.outputs.next }}
+          excludeTypes: ''
+
+      - name: Update automated.version
+        run: echo "${{ steps.semver.outputs.next }}" > automated.version
+
+      - name: Commit automated.version
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "[GitHub Action: Version]"
+          commit_author: kamma-github-actions <github@kammadata.com>
+          branch: main
+          file_pattern: automated.version
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ steps.semver.outputs.next }}
+          tag_name: ${{ steps.semver.outputs.next }}
+          body: ${{ steps.changelog.outputs.changes }}
+
+  # Hotfix back-merge: opens a PR from main → integration so prod fixes
+  # land in the development track too. Triggered after release succeeds.
+  hotfix-back-merge:
+    name: Back-merge to integration
+    needs: release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.release.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check if this release came from a hotfix
+        id: hotfix-check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Look at the most recent merge commit's PR. If the source branch
+          # was hotfix/*, open a back-merge PR.
+          MERGE_COMMIT=$(git log --merges --pretty=%H -1)
+          if [ -z "$MERGE_COMMIT" ]; then
+            echo "is_hotfix=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          HEAD_REF=$(gh api "repos/${{ github.repository }}/commits/$MERGE_COMMIT/pulls" \
+            --jq '.[0].head.ref' 2>/dev/null || echo "")
+          if [[ "$HEAD_REF" == hotfix/* ]]; then
+            echo "is_hotfix=true" >> "$GITHUB_OUTPUT"
+            echo "source_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_hotfix=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Open back-merge PR
+        if: steps.hotfix-check.outputs.is_hotfix == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="back-merge/main-to-integration-$(date -u +%Y%m%d-%H%M%S)"
+          git config user.name kamma-github-actions
+          git config user.email github@kammadata.com
+          git fetch origin integration
+          git checkout -b "$BRANCH" origin/integration
+          git merge origin/main --no-ff -m "chore(KAM-0000): back-merge main into integration after hotfix"
+          git push origin "$BRANCH"
+          gh pr create \
+            --base integration \
+            --head "$BRANCH" \
+            --title "chore(KAM-0000): back-merge hotfix from main to integration" \
+            --body "Auto-generated back-merge PR after a hotfix landed on main. Merge ASAP to keep integration in sync.
+
+Source hotfix: \`${{ steps.hotfix-check.outputs.source_ref }}\`"

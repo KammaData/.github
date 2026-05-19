@@ -1,0 +1,7 @@
+{
+  "name": "Kamma Conventional Release",
+  "description": "Conventional-commits release flow: lints commits + PR titles, auto-cuts releases on merge to main, opens hotfix back-merge PRs to integration.",
+  "iconName": "kamma_logo",
+  "categories": ["Automation", "Deployment"],
+  "filePatterns": ["composer.json$", "package.json$"]
+}
