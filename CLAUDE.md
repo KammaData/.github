@@ -37,7 +37,7 @@ This repo doesn't yet enforce commit-lint locally or in CI (it's small, low-traf
 
 ## When Updating Shared Templates
 
-Be careful — `templates/commitlint.config.cjs`, `templates/lefthook.yml`, and `workflow-templates/kamma-conventional-release.yml` are copied into individual repos rather than referenced. Updates here don't propagate automatically; downstream repos need a follow-up PR to pull the new template version. When making a non-trivial change:
+Be careful — `templates/commit-msg` and `workflow-templates/kamma-conventional-release.yml` are copied into individual repos rather than referenced. Updates here don't propagate automatically; downstream repos need a follow-up PR to pull the new template version. When making a non-trivial change:
 
 1. Update the template here.
 2. Open a follow-up commit/PR in each downstream consumer (`kamma-suite`, `kamma-sso`, etc.) to copy the change.
