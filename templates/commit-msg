@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#
+# Kamma shared commit-message validator.
+#
+# Enforces conventional commits with KAM-XXXX scope:
+#     <type>(KAM-XXXX): <imperative description>
+# See https://docs.kammadata.com/#/development/commit_strategy
+#
+# Bot commits, auto/manual deploys, merge commits, and reverts are exempt.
+#
+# Install in a repo with:
+#     cp commit-msg .githooks/commit-msg && chmod +x .githooks/commit-msg
+#     git config core.hooksPath .githooks
+#
+# (Or add `git config core.hooksPath .githooks` to your repo's `make setup`
+# target so it runs once after cloning.)
+
+set -euo pipefail
+
+readonly MSG_FILE="${1:?commit-msg hook expects a message file path}"
+readonly FIRST_LINE=$(head -n1 "$MSG_FILE")
+
+readonly VALID_TYPES="feat|fix|perf|refactor|test|docs|chore|style|build|ci|revert"
+readonly VALID_REGEX="^(${VALID_TYPES})\(KAM-[0-9]+\)!?: .+$"
+
+# Bot-authored commits and merge commits don't conform; that's intentional.
+readonly EXEMPT_REGEX="^(\[GitHub Action:|\[Auto-Deploy\]|\[Manual Deploy\]|Merge (pull request|branch|remote-tracking|commit) |Revert )"
+
+if [[ "$FIRST_LINE" =~ $EXEMPT_REGEX ]]; then
+    exit 0
+fi
+
+if [[ "$FIRST_LINE" =~ $VALID_REGEX ]] && [ "${#FIRST_LINE}" -le 72 ]; then
+    exit 0
+fi
+
+echo "" >&2
+echo "[commit-msg] Rejected — subject does not match the Kamma conventional-commits format." >&2
+echo "" >&2
+echo "  Required:   <type>(KAM-XXXX): <imperative description>" >&2
+echo "  Types:      ${VALID_TYPES//|/, }" >&2
+echo "  Max length: 72 chars" >&2
+echo "" >&2
+echo "  Examples:" >&2
+echo "    feat(KAM-7050): add bulk-import endpoint for properties" >&2
+echo "    fix(KAM-6697): suppress 404 noise from preferences lookup" >&2
+echo "    chore(KAM-7001): bump kamma/sso to v8.7.40" >&2
+echo "" >&2
+echo "  Got:" >&2
+echo "    $FIRST_LINE" >&2
+echo "" >&2
+echo "  Reference: https://docs.kammadata.com/#/development/commit_strategy" >&2
+exit 1

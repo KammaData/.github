@@ -4,51 +4,44 @@ This doc shows you how to wire up the [conventional-commits release flow](https:
 
 Canonical reference: [docs.kammadata.com → Commit Strategy](https://docs.kammadata.com/#/development/commit_strategy).
 
+**Design principle:** no Node tooling required. Local enforcement is a single bash hook; CI uses the same regex inline. One source of truth, zero extra dev deps.
+
 ## What you get
 
 - **Commit-time validation** — `git commit` fails locally if your message doesn't match `<type>(KAM-XXXX): description`.
-- **CI gate on PRs** — `wagoid/commitlint-github-action` blocks merging if any commit in the PR is non-conforming.
-- **PR title gate** — `amannn/action-semantic-pull-request` ensures the PR title is also a valid conventional commit.
+- **CI gate on PRs** — every commit in the PR is validated against the same regex; non-conforming commits block merge.
+- **PR title gate** — the PR title itself is validated (catches anything that slips past the per-commit check, useful if squash-merging is ever enabled).
 - **Auto-versioned releases on merge to main** — `ietf-tools/semver-action` computes the next version from commit types; `requarks/changelog-action` builds categorised release notes; `softprops/action-gh-release` publishes the tag + release.
 - **Auto back-merge for hotfixes** — hotfix branches that merge to `main` trigger an automated back-merge PR to `integration`.
 
 ## Quickstart: enabling on a new repo
 
-### 1. Add the shared configs
+### 1. Add the bash commit-msg hook
 
-Copy the two template files from this repo into the target repo's root:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/KammaData/.github/main/templates/commitlint.config.cjs \
-  -o commitlint.config.cjs
-curl -fsSL https://raw.githubusercontent.com/KammaData/.github/main/templates/lefthook.yml \
-  -o lefthook.yml
-```
-
-### 2. Add Node dev dependencies
+Copy the canonical hook into the target repo's `.githooks/` directory:
 
 ```bash
-npm install --save-dev \
-  @commitlint/cli \
-  @commitlint/config-conventional \
-  lefthook
+mkdir -p .githooks
+curl -fsSL https://raw.githubusercontent.com/KammaData/.github/main/templates/commit-msg \
+  -o .githooks/commit-msg
+chmod +x .githooks/commit-msg
 ```
 
-Even PHP-only repos need a `package.json` with these three dev deps so commitlint can run.
+Commit `.githooks/commit-msg` into the repo so everyone gets the same validation.
 
-### 3. Install the git hook
+### 2. Tell git to use it
+
+Each developer runs this once per clone:
 
 ```bash
-npx lefthook install
+git config core.hooksPath .githooks
 ```
 
-This wires up `.git/hooks/commit-msg` to run commitlint on every commit. Commits to **this clone** are now validated; teammates need to run the same command after cloning.
+Add that line to the repo's `make setup` target (or equivalent setup script) so it runs automatically on first checkout. Document it in the README under "Setup".
 
-Add to the repo's README under "Setup":
+That's it for local enforcement. No `npm install`. No Node prerequisites.
 
-> After cloning, run `npx lefthook install` to enable commit-message validation.
-
-### 4. Add the workflow
+### 3. Add the workflow
 
 Copy the workflow template into `.github/workflows/`:
 
@@ -58,9 +51,9 @@ curl -fsSL https://raw.githubusercontent.com/KammaData/.github/main/workflow-tem
   -o .github/workflows/00-conventional-release.yml
 ```
 
-You'll need to merge it with the repo's existing build/test/deploy jobs. The shared template covers commit-lint, PR-title-lint, release, and hotfix back-merge. The repo's existing workflow keeps responsibility for lint, test, image build, and staging/production deploy.
+Merge it with the repo's existing build/test/deploy jobs. The template covers commit-lint, PR-title-lint, release, and hotfix back-merge. The repo's existing workflow keeps responsibility for lint, test, image build, and staging/production deploy.
 
-### 5. Update branch protection on `main` and `integration`
+### 4. Update branch protection on `main` and `integration`
 
 In **Settings → Branches → Branch protection rules**, require these status checks:
 
@@ -74,9 +67,9 @@ And tick:
 - "Require status checks to pass before merging"
 - "Require branches to be up to date before merging"
 
-Do NOT tick "Require linear history" or "Allow squash merging" as the default — Kamma uses merge commits.
+Kamma uses **merge commits** — don't enable "Require linear history" or default to squash merges.
 
-### 6. Bootstrap commit
+### 5. Bootstrap commit
 
 Make the first commit on the repo using the new format:
 
@@ -84,7 +77,7 @@ Make the first commit on the repo using the new format:
 chore(KAM-XXXX): adopt conventional commits release flow
 ```
 
-Pushing this to `main` will trigger the workflow and cut the first auto-versioned release. If the repo had `v2.1.47` as its last tag, this lands as `v2.1.48`.
+Pushing this to `main` triggers the workflow and cuts the first auto-versioned release.
 
 ## Commit format reference
 
@@ -109,19 +102,22 @@ Pushing this to `main` will trigger the workflow and cut the first auto-versione
 | `ci`        | patch    | `ci(KAM-7160): enable parallel test runs`                               |
 | `style`     | patch    | `style(KAM-7170): apply Pint suggestions`                               |
 
-Any commit with a `BREAKING CHANGE:` footer triggers a **major** bump.
+Any commit with `<type>(KAM-XXXX)!:` or a `BREAKING CHANGE:` footer triggers a **major** bump.
 
 ## What if I really can't conform?
 
-- **Bot commits** (`[GitHub Action: ...]`, `[Auto-Deploy] ...`) — already exempt via `commitlint.config.cjs` ignores.
+- **Bot commits** (`[GitHub Action: ...]`, `[Auto-Deploy] ...`, `[Manual Deploy] ...`) — exempt at the regex level.
+- **Merge commits** (`Merge pull request #N from ...`, `Merge branch ...`) — exempt.
+- **Reverts** (`Revert ...`) — exempt.
 - **`helm-charts` repo** — exempt entirely. It's config, not application code.
-- **Manual deploy commits in helm-charts** — use `[Manual Deploy] <service> <env> → <tag>` (the `kamma:deploy-staging` / `kamma:deploy-production` skills handle this).
+
+Everything else must conform.
 
 ## Troubleshooting
 
-**"scope must be a Jira ticket reference"** — your commit message is missing `(KAM-XXXX)`. Amend with `git commit --amend` and add the scope.
+**Hook isn't running** — run `git config core.hooksPath` to check it's set to `.githooks`. If empty, you forgot step 2. Run `git config core.hooksPath .githooks`.
 
-**"header must not be longer than 72 characters"** — shorten the description. Move detail into the body.
+**"commit-msg hook expects a message file path"** — you ran the script directly; it's invoked by git. Just commit normally.
 
 **PR check fails on a commit you didn't write** — someone in the PR's history has a non-conforming commit. Either:
 - Have them amend & force-push, or

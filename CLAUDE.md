@@ -17,9 +17,8 @@ This repo is not deployed — it's pure configuration consumed by other repos an
   - `kamma-phpunit.yml` — PHPUnit test runner template.
   - `kamma-php-cs-fixer.yml` — PHP-CS-Fixer template.
   - `kamma-ecr.yml` — ECR push template (legacy; GCR is the current standard).
-- **`templates/`** — non-workflow shared baselines that repos copy to their own root:
-  - `commitlint.config.cjs` — `@commitlint/config-conventional` + Kamma scope rule (KAM-XXXX required).
-  - `lefthook.yml` — commit-msg hook config wiring up `npx commitlint`.
+- **`templates/`** — non-workflow shared files repos copy to their own root:
+  - `commit-msg` — bash hook validating `<type>(KAM-XXXX): description` locally. Copy into the repo's `.githooks/`, mark executable, and set `git config core.hooksPath .githooks`. Same regex is used inline in the workflow's CI commit-lint step (single source of truth, no Node).
 - **`docs/CONVENTIONAL_COMMITS.md`** — quickstart guide for enabling the conventional-commits flow on a Kamma repo.
 
 ## Git Commit Message Format
