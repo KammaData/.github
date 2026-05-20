@@ -104,15 +104,69 @@ jobs:
           branch: main
           patchList: fix, bugfix, perf, refactor, test, tests, docs, chore, style, build, ci
 
+      # Build the release notes inline from conventional commits. Same regex
+      # as .githooks/commit-msg + the PR commit-lint step. We don't use
+      # requarks/changelog-action — it can't handle SHAs and errors with
+      # "Couldn't find any commits" on perfectly valid commit ranges.
       - name: Build categorised changelog
         id: changelog
-        uses: requarks/changelog-action@v1
-        with:
-          token: ${{ github.token }}
-          fromTag: ${{ steps.semver.outputs.current }}
-          toTag: ${{ github.sha }}
-          excludeTypes: ''
-          writeToFile: false
+        env:
+          FROM_TAG: ${{ steps.semver.outputs.current }}
+        run: |
+          set -euo pipefail
+
+          declare -A categories=(
+            [feat]=":sparkles: New Features"
+            [fix]=":bug: Bug Fixes"
+            [perf]=":rocket: Performance Improvements"
+            [refactor]=":recycle: Refactors"
+            [test]=":white_check_mark: Tests"
+            [docs]=":book: Documentation"
+            [chore]=":wrench: Chores"
+            [style]=":art: Code Style"
+            [build]=":hammer: Build System"
+            [ci]=":gear: CI"
+            [revert]=":rewind: Reverts"
+          )
+          ORDER=(feat fix perf refactor test docs chore style build ci revert)
+
+          declare -A sections
+          while IFS=$'\t' read -r sha subject; do
+            [ -z "$sha" ] && continue
+            short="${sha:0:7}"
+            if [[ "$subject" =~ ^(feat|fix|perf|refactor|test|docs|chore|style|build|ci|revert)\((KAM-[0-9]+)\)(!)?:[[:space:]]+(.+)$ ]]; then
+              type="${BASH_REMATCH[1]}"
+              scope="${BASH_REMATCH[2]}"
+              bang="${BASH_REMATCH[3]}"
+              desc="${BASH_REMATCH[4]}"
+              breaking=""
+              [ -n "$bang" ] && breaking=" **[BREAKING]**"
+              sections[$type]+="- [\`${short}\`] - **${scope}**${breaking}: ${desc}"$'\n'
+            fi
+          done < <(git log --format=$'%H\t%s' --no-merges "${FROM_TAG}..HEAD")
+
+          {
+            echo "changes<<__CHANGELOG_EOF__"
+            total=0
+            for type in "${ORDER[@]}"; do
+              body="${sections[$type]:-}"
+              if [ -n "$body" ]; then
+                printf '### %s\n\n%s\n' "${categories[$type]}" "$body"
+                total=$((total + 1))
+              fi
+            done
+            if [ "$total" -eq 0 ]; then
+              echo "_No conventional commits found since ${FROM_TAG}._"
+            fi
+            echo "__CHANGELOG_EOF__"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "---" >&2
+          echo "Generated changelog from ${FROM_TAG}..HEAD:" >&2
+          for type in "${ORDER[@]}"; do
+            body="${sections[$type]:-}"
+            [ -n "$body" ] && printf '### %s\n\n%s\n' "${categories[$type]}" "$body" >&2
+          done
 
       - name: Update automated.version
         run: echo "${{ steps.semver.outputs.next }}" > automated.version
