@@ -161,12 +161,19 @@ jobs:
             echo "__CHANGELOG_EOF__"
           } >> "$GITHUB_OUTPUT"
 
-          echo "---" >&2
-          echo "Generated changelog from ${FROM_TAG}..HEAD:" >&2
-          for type in "${ORDER[@]}"; do
-            body="${sections[$type]:-}"
-            [ -n "$body" ] && printf '### %s\n\n%s\n' "${categories[$type]}" "$body" >&2
-          done
+          # Log the rendered changelog to stderr for inspection in the run log.
+          # Use `if` (not `&&`) so the loop's exit code stays 0 — under set -e
+          # a falsy test in the last iteration would abort the step.
+          {
+            echo "---"
+            echo "Generated changelog from ${FROM_TAG}..HEAD:"
+            for type in "${ORDER[@]}"; do
+              body="${sections[$type]:-}"
+              if [ -n "$body" ]; then
+                printf '### %s\n\n%s\n' "${categories[$type]}" "$body"
+              fi
+            done
+          } >&2
 
       - name: Update automated.version
         run: echo "${{ steps.semver.outputs.next }}" > automated.version
