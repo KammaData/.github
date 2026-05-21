@@ -11,7 +11,7 @@ Canonical reference: [docs.kammadata.com → Commit Strategy](https://docs.kamma
 - **Commit-time validation** — `git commit` fails locally if your message doesn't match `<type>(KAM-XXXX): description`.
 - **CI gate on PRs** — every commit in the PR is validated against the same regex; non-conforming commits block merge.
 - **PR title gate** — the PR title itself is validated (catches anything that slips past the per-commit check, useful if squash-merging is ever enabled).
-- **Auto-versioned releases on merge to main** — `ietf-tools/semver-action` computes the next version from commit types; `requarks/changelog-action` builds categorised release notes; `softprops/action-gh-release` publishes the tag + release.
+- **Auto-versioned releases on merge to main** — `ietf-tools/semver-action` computes the next version from commit types; an inline bash step (same regex as the local hook) renders categorised release notes; `softprops/action-gh-release` publishes the tag + release.
 - **Auto back-merge for hotfixes** — hotfix branches that merge to `main` trigger an automated back-merge PR to `integration`.
 
 ## Quickstart: enabling on a new repo
