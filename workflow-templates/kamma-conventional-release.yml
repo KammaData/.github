@@ -43,7 +43,7 @@ jobs:
               echo "skip   $sha  $subject"
               continue
             fi
-            if [[ "$subject" =~ $VALID_REGEX ]] && [ "${#subject}" -le 72 ]; then
+            if [[ "$subject" =~ $VALID_REGEX ]]; then
               echo "ok     $sha  $subject"
             else
               echo "::error::commit $sha does not match conventional-commits format: $subject"
@@ -72,7 +72,7 @@ jobs:
           set -euo pipefail
           VALID_TYPES="feat|fix|perf|refactor|test|docs|chore|style|build|ci|revert"
           VALID_REGEX="^(${VALID_TYPES})\(KAM-[0-9]+\)!?: .+$"
-          if [[ "$TITLE" =~ $VALID_REGEX ]] && [ "${#TITLE}" -le 72 ]; then
+          if [[ "$TITLE" =~ $VALID_REGEX ]]; then
             echo "PR title OK: $TITLE"
           else
             echo "::error::PR title must match: <type>(KAM-XXXX): <description>"

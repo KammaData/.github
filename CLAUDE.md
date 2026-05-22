@@ -31,7 +31,7 @@ Commits in this repo follow the Kamma org-wide convention: [Conventional Commits
 
 - Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `chore`, `style`, `build`, `ci`, `revert`
 - Scope: Jira ticket `KAM-\d+`, required
-- Description: imperative, ≤ 72 chars subject
+- Description: imperative subject, no trailing period
 
 This repo doesn't yet enforce commit-lint locally or in CI (it's small, low-traffic), but emit the right format anyway so the convention holds across the org.
 

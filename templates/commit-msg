@@ -30,16 +30,15 @@ if [[ "$FIRST_LINE" =~ $EXEMPT_REGEX ]]; then
     exit 0
 fi
 
-if [[ "$FIRST_LINE" =~ $VALID_REGEX ]] && [ "${#FIRST_LINE}" -le 72 ]; then
+if [[ "$FIRST_LINE" =~ $VALID_REGEX ]]; then
     exit 0
 fi
 
 echo "" >&2
 echo "[commit-msg] Rejected — subject does not match the Kamma conventional-commits format." >&2
 echo "" >&2
-echo "  Required:   <type>(KAM-XXXX): <imperative description>" >&2
-echo "  Types:      ${VALID_TYPES//|/, }" >&2
-echo "  Max length: 72 chars" >&2
+echo "  Required:  <type>(KAM-XXXX): <imperative description>" >&2
+echo "  Types:     ${VALID_TYPES//|/, }" >&2
 echo "" >&2
 echo "  Examples:" >&2
 echo "    feat(KAM-7050): add bulk-import endpoint for properties" >&2
